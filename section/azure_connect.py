@@ -28,34 +28,40 @@ def page():
 
     st.write("---")
     # configuration management
-    config = configparser.ConfigParser()
-    configpath = st.session_state.path_this + '/data/config.conf'
-    config.read(configpath)
 
-    # Azure account choice
-    azureaccountslist = st.secrets['sections']['sections']
-    account_selected = st.selectbox('Azure Storage account selected', azureaccountslist, index = 0, key = 'app_selectboxaccount')
+    try : 
+        # Azure account choice
+        azureaccountslist = st.secrets['sections']['sections']
+        account_selected = st.selectbox('Azure Storage account selected', azureaccountslist, index = 0, key = 'app_selectboxaccount')
 
-    st.warning('To add a storage account, please update conf file')
+        st.warning('To add a storage account, please update conf file')
 
     # tokens
-    st.session_state.data_azureaccount = st.secrets[account_selected]['account']
-    st.session_state.secret_accountKey = st.secrets[account_selected]['account_key']
-    st.session_state.secret_url = st.secrets[account_selected]['url']
-    st.session_state.blob_service_client = BlobServiceClient(st.session_state.secret_url, st.session_state.secret_accountKey)
+    
+        st.session_state.data_azureaccount = st.secrets[account_selected]['account']
+        st.session_state.secret_accountKey = st.secrets[account_selected]['account_key']
+        st.session_state.secret_url = st.secrets[account_selected]['url']
+        st.session_state.blob_service_client = BlobServiceClient(st.session_state.secret_url, st.session_state.secret_accountKey)
+    except FileNotFoundError as e:
+        st.error('No credential detected')
+
 
     st.write("---")
-    
-    with st.spinner('Wait for it...'):
 
-        time.sleep(5)
-        st.info('Azure storage account : ' + st.session_state.data_azureaccount)
-        account_info = st.session_state.blob_service_client.get_account_information()
-        st.info('Using Storage SKU: {}'.format(account_info['sku_name']))
-        st.info('Version: {}'.format(account_info['version']))
-        if 'balloons' not in st.session_state:
-            st.session_state.balloons = st.balloons()
-        else : st.session_state.balloons = st.balloons()
+    if 'data_azureaccount' in st.session_state :
+    
+        with st.spinner('Wait for it...'):
+
+            time.sleep(5)
+            st.info('Azure storage account : ' + st.session_state.data_azureaccount)
+            account_info = st.session_state.blob_service_client.get_account_information()
+            st.info('Using Storage SKU: {}'.format(account_info['sku_name']))
+            st.info('Version: {}'.format(account_info['version']))
+            if 'balloons' not in st.session_state:
+                st.session_state.balloons = st.balloons()
+            else : st.session_state.balloons = st.balloons()
+    else: 
+        st.warning("Can't connect to Azure Blob")
 
 
     st.write("---")

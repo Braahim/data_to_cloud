@@ -1,14 +1,18 @@
 import streamlit as st
-from utils import generate_utils, app_utils;
+from utils import generate_utils, app_utils
 import datetime
 
 
 def page():
     st.title("Data Generator 🎲")
     st.write("Welcome to the Data Generator app! This app allows you to generate random data and save it as a CSV or Parquet file.")
-    st.write("To get started, enter the number of lines you want to generate below and click the 'Let's go !' button.")
+    st.write("To get started, enter the number of files and lines per files you want to generate below and click the 'Let's go !' button.")
  
+
+    num_files = st.slider("Enter the number of files to generate", value=10, min_value=1, max_value=10)
     num_lines = st.number_input("Enter the number of lines to generate", value=10, min_value=1, max_value=10000)
+
+    
     st.session_state.button = st.button("Let's go ! ")
     if st.session_state.button:
 
@@ -114,16 +118,22 @@ def page():
                 
 
                 if st.button("Add data to Blob Azure"):
-                    if 'parquet' in st.session_state.data_format: data = generate_utils.generate_data(num_lines)
-                    else : data = generate_utils.generate_data(num_lines)
-                    
+                    st.session_state.message = f"Loading ..."
+                    st.session_state.success = st.success(st.session_state.message)
+                    for i in range(num_files):
+                        data = generate_utils.generate_data(num_lines)
+                        
+                        try : 
+                            blob_client = st.session_state.blob_service_client.get_blob_client(container = st.session_state.data_container, blob=st.session_state.data_blob +'/'+st.session_state.data_format + '/chemical_elements_' + str(datetime.datetime.now()) + ".{}".format(st.session_state.data_format))
+                            app_utils.upload_to_blob(blob_client,data,st.session_state.data_format)
+                            st.session_state.message = f"File number {i} generated and added to Blob."
+                            
+                        except Exception as e: 
+                            st.error(e)
+                    #st.session_state.success = st.success(st.session_state.message)
 
-                    blob_client = st.session_state.blob_service_client.get_blob_client(container = st.session_state.data_container, blob=st.session_state.data_blob +'/'+st.session_state.data_format + '/chemical_elements_' + str(datetime.datetime.now()) + ".{}".format(st.session_state.data_format))
-
-
-
-                    app_utils.upload_to_blob(blob_client,data,st.session_state.data_format)
-                    st.markdown(":file_folder: <span style='color:blue;'>** chemical_elements_" + str(now) + "**</span>", unsafe_allow_html = True)
-                    st.markdown("<span style='color:purple;'>** ______ uploaded to Azure Blob Stroage in " + st.session_state.data_blob +'/'+st.session_state.data_format + "**</span>", unsafe_allow_html = True)
+            #         app_utils.upload_to_blob(blob_client,data,st.session_state.data_format)
+            #         st.markdown(":file_folder: <span style='color:blue;'>** chemical_elements_" + str(now) + "**</span>", unsafe_allow_html = True)
+            #         st.markdown("<span style='color:purple;'>** ______ uploaded to Azure Blob Stroage in " + st.session_state.data_blob +'/'+st.session_state.data_format + "**</span>", unsafe_allow_html = True)
             st.write("---")
 
